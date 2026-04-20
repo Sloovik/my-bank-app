@@ -1,0 +1,17 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: cash-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bankdb?currentSchema=cash
+    username: bankuser
+    password: bankpassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: cash

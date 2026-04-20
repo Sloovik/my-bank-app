@@ -1,0 +1,48 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: accounts-service
+
+  config:
+    import: optional:configserver:http://localhost:8888
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bankdb?currentSchema=accounts
+    username: bankuser
+    password: bankpassword
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000
+      client:
+        registration:
+          accounts-service:
+            client-id: accounts-service
+            client-secret: accounts-secret
+            authorization-grant-type: client_credentials
+            scope: NOTIFICATIONS_WRITE
+        provider:
+          accounts-service:
+            token-uri: http://localhost:9000/oauth2/token
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

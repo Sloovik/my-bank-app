@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/001-create-accounts-table.sql
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/002-insert-test-data.sql
+      relativeToChangelogFile: false
