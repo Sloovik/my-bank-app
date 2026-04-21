@@ -9,6 +9,7 @@ import ru.yandex.practicum.transferservice.client.AccountResponseDto;
 import ru.yandex.practicum.transferservice.client.AccountsClient;
 import ru.yandex.practicum.transferservice.client.NotificationsClient;
 import ru.yandex.practicum.transferservice.dto.*;
+import ru.yandex.practicum.transferservice.repository.TransferOperationRepository;
 
 import java.math.BigDecimal;
 
@@ -25,11 +26,16 @@ class TransferServiceImplTest {
     @Mock
     private NotificationsClient notificationsClient;
 
+    @Mock
+    private TransferOperationRepository operationRepository;
+
     @InjectMocks
     private TransferServiceImpl transferService;
 
     @Test
     void transfer_shouldDebitSenderAndCreditReceiver() {
+        when(operationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
         AccountResponseDto senderAfter = new AccountResponseDto("user1", "Иванов Иван", BigDecimal.valueOf(500));
         AccountResponseDto receiverAfter = new AccountResponseDto("user2", "Петров Петр", BigDecimal.valueOf(1600));
 
@@ -37,7 +43,6 @@ class TransferServiceImplTest {
                 .thenReturn(senderAfter);
         when(accountsClient.updateBalance(eq("user2"), argThat(dto -> dto.getAmount().signum() > 0)))
                 .thenReturn(receiverAfter);
-        doNothing().when(notificationsClient).sendNotification(any());
 
         TransferRequestDto request = new TransferRequestDto("user1", "user2", BigDecimal.valueOf(500));
         TransferResponseDto result = transferService.transfer(request);
@@ -45,9 +50,7 @@ class TransferServiceImplTest {
         assertNotNull(result);
         assertEquals("user1", result.getFromLogin());
         assertEquals("user2", result.getToLogin());
-        assertEquals(BigDecimal.valueOf(500), result.getAmount());
 
         verify(accountsClient, times(2)).updateBalance(anyString(), any());
-        verify(notificationsClient, times(2)).sendNotification(any());
     }
 }

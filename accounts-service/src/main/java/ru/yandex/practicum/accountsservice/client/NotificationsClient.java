@@ -6,7 +6,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import ru.yandex.practicum.accountsservice.config.FeignOAuth2Config;
 import ru.yandex.practicum.accountsservice.dto.NotificationDto;
 
-@FeignClient(name = "notifications-service", configuration = FeignOAuth2Config.class)
+@FeignClient(name = "notifications-service",
+        configuration = FeignOAuth2Config.class,
+        fallback = NotificationsClientFallback.class)
 public interface NotificationsClient {
 
     @PostMapping("/notifications")

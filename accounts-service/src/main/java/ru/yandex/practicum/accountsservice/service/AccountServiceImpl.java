@@ -4,16 +4,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.yandex.practicum.accountsservice.client.NotificationsClient;
 import ru.yandex.practicum.accountsservice.dto.*;
+import ru.yandex.practicum.accountsservice.exception.AccountNotFoundException;
+import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
 import ru.yandex.practicum.accountsservice.model.Account;
+import ru.yandex.practicum.accountsservice.model.OutboxEvent;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
+import ru.yandex.practicum.accountsservice.repository.OutboxEventRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -22,7 +24,7 @@ import java.util.stream.Collectors;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
-    private final NotificationsClient notificationsClient;
+    private final OutboxEventRepository outboxRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,9 +43,10 @@ public class AccountServiceImpl implements AccountService {
         account.setBirthdate(dto.birthdate());
         account = accountRepository.save(account);
 
-        notificationsClient.sendNotification(new NotificationDto(
-                login,
-                "Account profile updated: name=" + dto.name()
+        String message = "Account profile updated: name=" + dto.name();
+        outboxRepository.save(new OutboxEvent(
+                "ACCOUNT_UPDATED",
+                "{\"login\":\"%s\",\"message\":\"%s\"}".formatted(login, message)
         ));
 
         return toResponseDto(account);
@@ -65,15 +68,16 @@ public class AccountServiceImpl implements AccountService {
         BigDecimal newBalance = account.getBalance().add(delta);
 
         if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalStateException("Insufficient funds");
+            throw new InsufficientFundsException(login, delta.abs(), account.getBalance());
         }
 
         account.setBalance(newBalance);
         account = accountRepository.save(account);
 
-        notificationsClient.sendNotification(new NotificationDto(
-                login,
-                "Balance updated: delta=" + delta + ", new balance=" + newBalance
+        String message = "Balance updated: delta=" + delta + ", new balance=" + newBalance;
+        outboxRepository.save(new OutboxEvent(
+                "BALANCE_UPDATED",
+                "{\"login\":\"%s\",\"message\":\"%s\"}".formatted(login, message)
         ));
 
         return toResponseDto(account);
@@ -81,7 +85,7 @@ public class AccountServiceImpl implements AccountService {
 
     private Account findByLogin(String login) {
         return accountRepository.findByLogin(login)
-                .orElseThrow(() -> new NoSuchElementException("Account not found: " + login));
+                .orElseThrow(() -> new AccountNotFoundException(login));
     }
 
     private void validateAge(LocalDate birthdate) {

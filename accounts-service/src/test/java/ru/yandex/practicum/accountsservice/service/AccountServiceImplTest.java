@@ -6,10 +6,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.yandex.practicum.accountsservice.client.NotificationsClient;
-import ru.yandex.practicum.accountsservice.dto.*;
+import ru.yandex.practicum.accountsservice.dto.AccountResponseDto;
+import ru.yandex.practicum.accountsservice.dto.AccountShortDto;
+import ru.yandex.practicum.accountsservice.dto.AccountUpdateDto;
+import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
 import ru.yandex.practicum.accountsservice.model.Account;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
+import ru.yandex.practicum.accountsservice.repository.OutboxEventRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,8 +20,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AccountServiceImplTest {
@@ -27,7 +30,7 @@ class AccountServiceImplTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private NotificationsClient notificationsClient;
+    private OutboxEventRepository outboxRepository;
 
     @InjectMocks
     private AccountServiceImpl accountService;
@@ -67,7 +70,6 @@ class AccountServiceImplTest {
     void updateBalance_shouldIncreaseBalance() {
         when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
         when(accountRepository.save(any())).thenReturn(testAccount);
-        doNothing().when(notificationsClient).sendNotification(any());
 
         BigDecimal delta = BigDecimal.valueOf(500);
         AccountResponseDto result = accountService.updateBalance("user1", delta);
@@ -80,15 +82,13 @@ class AccountServiceImplTest {
         when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
 
         BigDecimal delta = BigDecimal.valueOf(-2000);
-
-        assertThrows(IllegalStateException.class, () -> accountService.updateBalance("user1", delta));
+        assertThrows(InsufficientFundsException.class, () -> accountService.updateBalance("user1", delta));
     }
 
     @Test
     void updateAccount_shouldUpdateNameAndBirthdate() {
         when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
         when(accountRepository.save(any())).thenReturn(testAccount);
-        doNothing().when(notificationsClient).sendNotification(any());
 
         AccountUpdateDto updateDto = new AccountUpdateDto("Петров Петр", LocalDate.of(1985, 5, 15));
         AccountResponseDto result = accountService.updateAccount("user1", updateDto);

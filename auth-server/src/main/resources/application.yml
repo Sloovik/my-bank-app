@@ -9,6 +9,10 @@ spring:
       import-check:
         enabled: false
 
+security:
+  jwt:
+    key-id: my-bank-app-rsa-key-2024
+
 eureka:
   client:
     register-with-eureka: true

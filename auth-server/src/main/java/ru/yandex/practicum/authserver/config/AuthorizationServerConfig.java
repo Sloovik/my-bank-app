@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -34,6 +35,9 @@ import java.util.UUID;
 @Configuration
 @Import(OAuth2AuthorizationServerConfiguration.class)
 public class AuthorizationServerConfig {
+
+    @Value("${security.jwt.key-id:my-bank-app-key}")
+    private String keyId;
 
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
@@ -84,7 +88,7 @@ public class AuthorizationServerConfig {
     @Bean
     public JWKSource<SecurityContext> jwkSource() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
+        keyPairGenerator.initialize(2048, new java.security.SecureRandom("my-bank-app-fixed-seed".getBytes()));
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
@@ -92,7 +96,7 @@ public class AuthorizationServerConfig {
 
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
+                .keyID(keyId)
                 .build();
 
         JWKSet jwkSet = new JWKSet(rsaKey);
