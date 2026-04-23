@@ -1,0 +1,17 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: accounts-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bankdb?currentSchema=accounts
+    username: bankuser
+    password: bankpassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: accounts

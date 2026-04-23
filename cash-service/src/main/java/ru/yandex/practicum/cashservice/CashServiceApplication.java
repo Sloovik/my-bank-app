@@ -1,0 +1,14 @@
+package ru.yandex.practicum.cashservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
+@SpringBootApplication
+@EnableFeignClients
+public class CashServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(CashServiceApplication.class, args);
+    }
+}

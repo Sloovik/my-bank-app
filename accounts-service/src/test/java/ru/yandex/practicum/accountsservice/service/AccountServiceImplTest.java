@@ -1,0 +1,113 @@
+package ru.yandex.practicum.accountsservice.service;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import ru.yandex.practicum.accountsservice.dto.AccountResponseDto;
+import ru.yandex.practicum.accountsservice.dto.AccountShortDto;
+import ru.yandex.practicum.accountsservice.dto.AccountUpdateDto;
+import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
+import ru.yandex.practicum.accountsservice.model.Account;
+import ru.yandex.practicum.accountsservice.repository.AccountRepository;
+import ru.yandex.practicum.accountsservice.repository.OutboxEventRepository;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class AccountServiceImplTest {
+
+    @Mock
+    private AccountRepository accountRepository;
+
+    @Mock
+    private OutboxEventRepository outboxRepository;
+
+    @InjectMocks
+    private AccountServiceImpl accountService;
+
+    private Account testAccount;
+
+    @BeforeEach
+    void setUp() {
+        testAccount = new Account();
+        testAccount.setId(1L);
+        testAccount.setLogin("user1");
+        testAccount.setName("Иванов Иван");
+        testAccount.setBirthdate(LocalDate.of(1990, 1, 1));
+        testAccount.setBalance(BigDecimal.valueOf(1000));
+    }
+
+    @Test
+    void getAccount_shouldReturnAccountDto() {
+        when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
+
+        AccountResponseDto result = accountService.getAccount("user1");
+
+        assertNotNull(result);
+        assertEquals("user1", result.login());
+        assertEquals("Иванов Иван", result.name());
+        assertEquals(BigDecimal.valueOf(1000), result.balance());
+    }
+
+    @Test
+    void getAccount_shouldThrowWhenNotFound() {
+        when(accountRepository.findByLogin("unknown")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> accountService.getAccount("unknown"));
+    }
+
+    @Test
+    void updateBalance_shouldIncreaseBalance() {
+        when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
+        when(accountRepository.save(any())).thenReturn(testAccount);
+
+        BigDecimal delta = BigDecimal.valueOf(500);
+        AccountResponseDto result = accountService.updateBalance("user1", delta);
+
+        assertEquals(BigDecimal.valueOf(1500), testAccount.getBalance());
+    }
+
+    @Test
+    void updateBalance_shouldThrowWhenInsufficientFunds() {
+        when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
+
+        BigDecimal delta = BigDecimal.valueOf(-2000);
+        assertThrows(InsufficientFundsException.class, () -> accountService.updateBalance("user1", delta));
+    }
+
+    @Test
+    void updateAccount_shouldUpdateNameAndBirthdate() {
+        when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
+        when(accountRepository.save(any())).thenReturn(testAccount);
+
+        AccountUpdateDto updateDto = new AccountUpdateDto("Петров Петр", LocalDate.of(1985, 5, 15));
+        AccountResponseDto result = accountService.updateAccount("user1", updateDto);
+
+        assertEquals("Петров Петр", testAccount.getName());
+        assertEquals(LocalDate.of(1985, 5, 15), testAccount.getBirthdate());
+    }
+
+    @Test
+    void getOtherAccounts_shouldReturnOtherAccounts() {
+        Account other = new Account();
+        other.setLogin("user2");
+        other.setName("Петров Петр");
+
+        when(accountRepository.findByLoginNot("user1")).thenReturn(List.of(other));
+
+        List<AccountShortDto> result = accountService.getOtherAccounts("user1");
+
+        assertEquals(1, result.size());
+        assertEquals("user2", result.get(0).login());
+    }
+}
