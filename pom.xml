@@ -20,8 +20,6 @@
     <description>Multi-module bank application</description>
 
     <modules>
-        <module>config-server</module>
-        <module>eureka-server</module>
         <module>gateway-server</module>
         <module>auth-server</module>
         <module>accounts-service</module>

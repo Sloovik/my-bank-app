@@ -18,34 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  config-server:
-    build:
-      context: ./config-server
-    container_name: config-server
-    ports:
-      - "8888:8888"
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-    depends_on:
-      - eureka-server
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-
-  eureka-server:
-    build:
-      context: ./eureka-server
-    container_name: eureka-server
-    ports:
-      - "8761:8761"
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-
   auth-server:
     build:
       context: ./auth-server
@@ -53,29 +25,7 @@ services:
     ports:
       - "9000:9000"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-    depends_on:
-      config-server:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
-
-  gateway-server:
-    build:
-      context: ./gateway-server
-    container_name: gateway-server
-    ports:
-      - "8765:8765"
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://auth-server:9000
-    depends_on:
-      config-server:
-        condition: service_healthy
-      auth-server:
-        condition: service_started
+      - JWT_KEY_ID=my-bank-app-rsa-key-2024
 
   accounts-service:
     build:
@@ -87,18 +37,14 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bankdb?currentSchema=accounts
       - SPRING_DATASOURCE_USERNAME=bankuser
       - SPRING_DATASOURCE_PASSWORD=bankpassword
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://auth-server:9000
-      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_ACCOUNTS_SERVICE_TOKEN_URI=http://auth-server:9000/oauth2/token
+      - OAUTH2_ISSUER_URI=http://auth-server:9000
+      - OAUTH2_TOKEN_URI=http://auth-server:9000/oauth2/token
+      - OAUTH2_CLIENT_ID=accounts-service
+      - OAUTH2_CLIENT_SECRET=accounts-secret
     depends_on:
       postgres:
         condition: service_healthy
-      config-server:
-        condition: service_healthy
       auth-server:
-        condition: service_started
-      notifications-service:
         condition: service_started
 
   cash-service:
@@ -111,10 +57,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bankdb?currentSchema=cash
       - SPRING_DATASOURCE_USERNAME=bankuser
       - SPRING_DATASOURCE_PASSWORD=bankpassword
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://auth-server:9000
-      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_CASH_SERVICE_TOKEN_URI=http://auth-server:9000/oauth2/token
+      - OAUTH2_ISSUER_URI=http://auth-server:9000
+      - OAUTH2_TOKEN_URI=http://auth-server:9000/oauth2/token
+      - OAUTH2_CLIENT_ID=cash-service
+      - OAUTH2_CLIENT_SECRET=cash-secret
     depends_on:
       postgres:
         condition: service_healthy
@@ -131,10 +77,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bankdb?currentSchema=transfer
       - SPRING_DATASOURCE_USERNAME=bankuser
       - SPRING_DATASOURCE_PASSWORD=bankpassword
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://auth-server:9000
-      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_TRANSFER_SERVICE_TOKEN_URI=http://auth-server:9000/oauth2/token
+      - OAUTH2_ISSUER_URI=http://auth-server:9000
+      - OAUTH2_TOKEN_URI=http://auth-server:9000/oauth2/token
+      - OAUTH2_CLIENT_ID=transfer-service
+      - OAUTH2_CLIENT_SECRET=transfer-secret
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,12 +97,26 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bankdb?currentSchema=notifications
       - SPRING_DATASOURCE_USERNAME=bankuser
       - SPRING_DATASOURCE_PASSWORD=bankpassword
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://auth-server:9000
+      - OAUTH2_ISSUER_URI=http://auth-server:9000
     depends_on:
       postgres:
         condition: service_healthy
+
+  gateway-server:
+    build:
+      context: ./gateway-server
+    container_name: gateway-server
+    ports:
+      - "8765:8765"
+    environment:
+      - ACCOUNTS_SERVICE_URL=http://accounts-service:8081
+      - CASH_SERVICE_URL=http://cash-service:8082
+      - TRANSFER_SERVICE_URL=http://transfer-service:8083
+      - NOTIFICATIONS_SERVICE_URL=http://notifications-service:8084
+      - OAUTH2_ISSUER_URI=http://auth-server:9000
+    depends_on:
+      auth-server:
+        condition: service_started
 
   front-app:
     build:
@@ -165,14 +125,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_FRONT_APP_REDIRECT_URI=http://localhost:8080/login/oauth2/code/front-app
-      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_FRONT_APP_AUTHORIZATION_URI=http://localhost:9000/oauth2/authorize
-      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_FRONT_APP_TOKEN_URI=http://auth-server:9000/oauth2/token
-      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_FRONT_APP_USER_INFO_URI=http://auth-server:9000/userinfo
-      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_FRONT_APP_JWK_SET_URI=http://auth-server:9000/oauth2/jwks
       - GATEWAY_URL=http://gateway-server:8765
+      - OAUTH2_CLIENT_ID=front-app
+      - OAUTH2_CLIENT_SECRET=front-secret
+      - OAUTH2_AUTHORIZATION_URI=http://localhost:9000/oauth2/authorize
+      - OAUTH2_TOKEN_URI=http://auth-server:9000/oauth2/token
+      - OAUTH2_USERINFO_URI=http://auth-server:9000/userinfo
+      - OAUTH2_JWK_SET_URI=http://auth-server:9000/oauth2/jwks
+      - OAUTH2_REDIRECT_URI=http://localhost:8080/login/oauth2/code/front-app
     depends_on:
       gateway-server:
         condition: service_started

@@ -1,0 +1,32 @@
+apiVersion: v2
+name: my-bank-app
+description: My Bank microservices application
+type: application
+version: 0.1.0
+appVersion: "0.0.1"
+dependencies:
+  - name: postgresql
+    alias: postgres
+    version: "0.1.0"
+    repository: "file://charts/postgresql"
+  - name: auth-server
+    version: "0.1.0"
+    repository: "file://charts/auth-server"
+  - name: gateway-server
+    version: "0.1.0"
+    repository: "file://charts/gateway-server"
+  - name: accounts-service
+    version: "0.1.0"
+    repository: "file://charts/accounts-service"
+  - name: cash-service
+    version: "0.1.0"
+    repository: "file://charts/cash-service"
+  - name: transfer-service
+    version: "0.1.0"
+    repository: "file://charts/transfer-service"
+  - name: notifications-service
+    version: "0.1.0"
+    repository: "file://charts/notifications-service"
+  - name: front-app
+    version: "0.1.0"
+    repository: "file://charts/front-app"

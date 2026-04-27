@@ -1,8 +1,0 @@
-server:
-  port: 8080
-
-spring:
-  application:
-    name: front-app
-  thymeleaf:
-    cache: false

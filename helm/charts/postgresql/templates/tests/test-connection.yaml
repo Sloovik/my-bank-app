@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "postgres-test-connection"
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: pg-isready
+      image: postgres:16-alpine
+      command: ["pg_isready", "-h", "postgres", "-U", "{{ .Values.username }}", "-d", "{{ .Values.database }}"]
+  restartPolicy: Never
