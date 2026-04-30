@@ -4,37 +4,29 @@ server:
 spring:
   application:
     name: front-app
-  config:
-    import: optional:configserver:http://localhost:8888
-
   security:
     oauth2:
       client:
         registration:
           front-app:
-            client-id: front-app
-            client-secret: front-secret
+            client-id: ${OAUTH2_CLIENT_ID:front-app}
+            client-secret: ${OAUTH2_CLIENT_SECRET:front-secret}
             authorization-grant-type: authorization_code
-            redirect-uri: http://localhost:8080/login/oauth2/code/front-app
+            redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:8080/login/oauth2/code/front-app}
             scope: openid,profile,ACCOUNTS_READ,ACCOUNTS_WRITE,CASH_WRITE,TRANSFER_WRITE
         provider:
           front-app:
-            authorization-uri: http://localhost:9000/oauth2/authorize
-            token-uri: http://localhost:9000/oauth2/token
-            user-info-uri: http://localhost:9000/userinfo
-            jwk-set-uri: http://localhost:9000/oauth2/jwks
+            authorization-uri: ${OAUTH2_AUTHORIZATION_URI:http://localhost:9000/oauth2/authorize}
+            token-uri: ${OAUTH2_TOKEN_URI:http://localhost:9000/oauth2/token}
+            user-info-uri: ${OAUTH2_USERINFO_URI:http://localhost:9000/userinfo}
+            jwk-set-uri: ${OAUTH2_JWK_SET_URI:http://localhost:9000/oauth2/jwks}
             user-name-attribute: sub
 
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka
+gateway:
+  url: ${GATEWAY_URL:http://localhost:8765}
 
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
-
-gateway:
-  url: http://localhost:8765
+        include: "health,info"

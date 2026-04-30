@@ -4,20 +4,41 @@ server:
 spring:
   application:
     name: gateway-server
-  config:
-    import: optional:configserver:http://localhost:8888
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
+      routes:
+        - id: accounts-service
+          uri: ${ACCOUNTS_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/accounts/**
+          filters:
+            - RewritePath=/api/accounts/(?<segment>.*), /${segment}
+        - id: cash-service
+          uri: ${CASH_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/cash/**
+          filters:
+            - RewritePath=/api/cash/(?<segment>.*), /${segment}
+        - id: transfer-service
+          uri: ${TRANSFER_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/transfer/**
+          filters:
+            - RewritePath=/api/transfer/(?<segment>.*), /${segment}
+        - id: notifications-service
+          uri: ${NOTIFICATIONS_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - RewritePath=/api/notifications/(?<segment>.*), /${segment}
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:9000}
 
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"

@@ -4,51 +4,31 @@ server:
 spring:
   application:
     name: cash-service
-
-  config:
-    import: optional:configserver:http://localhost:8888
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/bankdb?currentSchema=cash
-    username: bankuser
-    password: bankpassword
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/bankdb?currentSchema=cash}
+    username: ${SPRING_DATASOURCE_USERNAME:bankuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:bankpassword}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_schema: cash
-
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
-    default-schema: cash
-
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:9000}
       client:
         registration:
           cash-service:
+            client-id: ${OAUTH2_CLIENT_ID:cash-service}
+            client-secret: ${OAUTH2_CLIENT_SECRET:cash-secret}
             authorization-grant-type: client_credentials
-            client-id: cash-service
-            client-secret: cash-secret
-            scope: ACCOUNTS_WRITE,NOTIFICATIONS_WRITE
+            scope: ACCOUNTS_WRITE NOTIFICATIONS_WRITE
         provider:
           cash-service:
-            token-uri: http://localhost:9000/oauth2/token
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
+            token-uri: ${OAUTH2_TOKEN_URI:http://localhost:9000/oauth2/token}
 
 feign:
   circuitbreaker:
@@ -76,7 +56,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
+        include: "health,info"

@@ -1,0 +1,39 @@
+global:
+  namespace: bank
+  imageTag: "0.0.1-SNAPSHOT"
+  imagePullPolicy: IfNotPresent
+
+  oauth2:
+    issuerUri: "http://auth-server:9000"
+    tokenUri: "http://auth-server:9000/oauth2/token"
+
+  database:
+    host: postgres
+    port: 5432
+    name: bankdb
+    username: bankuser
+    password: bankpassword
+
+postgres:
+  enabled: true
+
+auth-server:
+  enabled: true
+
+gateway-server:
+  enabled: true
+
+accounts-service:
+  enabled: true
+
+cash-service:
+  enabled: true
+
+transfer-service:
+  enabled: true
+
+notifications-service:
+  enabled: true
+
+front-app:
+  enabled: true

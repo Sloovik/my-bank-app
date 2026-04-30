@@ -4,35 +4,24 @@ server:
 spring:
   application:
     name: notifications-service
-
-  config:
-    import: optional:configserver:http://localhost:8888
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/bankdb?currentSchema=notifications
-    username: bankuser
-    password: bankpassword
-
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/bankdb?currentSchema=notifications}
+    username: ${SPRING_DATASOURCE_USERNAME:bankuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:bankpassword}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate
-
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
-
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000
-
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:9000}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: "health,info"

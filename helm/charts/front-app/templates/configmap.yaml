@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  GATEWAY_URL: "http://gateway-server:8765"
+  OAUTH2_CLIENT_ID: "front-app"
+  OAUTH2_AUTHORIZATION_URI: "http://localhost:9000/oauth2/authorize"
+  OAUTH2_TOKEN_URI: "http://auth-server:9000/oauth2/token"
+  OAUTH2_USERINFO_URI: "http://auth-server:9000/userinfo"
+  OAUTH2_JWK_SET_URI: "http://auth-server:9000/oauth2/jwks"
+  OAUTH2_REDIRECT_URI: "http://localhost:30080/login/oauth2/code/front-app"

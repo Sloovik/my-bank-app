@@ -1,0 +1,5 @@
+image: postgres:16-alpine
+database: bankdb
+username: bankuser
+password: bankpassword
+storageSize: 1Gi

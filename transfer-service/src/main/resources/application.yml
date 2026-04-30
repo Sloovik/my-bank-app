@@ -4,51 +4,31 @@ server:
 spring:
   application:
     name: transfer-service
-
-  config:
-    import: optional:configserver:http://localhost:8888
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/bankdb?currentSchema=transfer
-    username: bankuser
-    password: bankpassword
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/bankdb?currentSchema=transfer}
+    username: ${SPRING_DATASOURCE_USERNAME:bankuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:bankpassword}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_schema: transfer
-
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
-    default-schema: transfer
-
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:9000}
       client:
         registration:
           transfer-service:
+            client-id: ${OAUTH2_CLIENT_ID:transfer-service}
+            client-secret: ${OAUTH2_CLIENT_SECRET:transfer-secret}
             authorization-grant-type: client_credentials
-            client-id: transfer-service
-            client-secret: transfer-secret
-            scope: ACCOUNTS_WRITE,NOTIFICATIONS_WRITE
+            scope: ACCOUNTS_WRITE NOTIFICATIONS_WRITE
         provider:
           transfer-service:
-            token-uri: http://localhost:9000/oauth2/token
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
+            token-uri: ${OAUTH2_TOKEN_URI:http://localhost:9000/oauth2/token}
 
 feign:
   circuitbreaker:
@@ -61,7 +41,6 @@ resilience4j:
         slidingWindowSize: 10
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
-        permittedNumberOfCallsInHalfOpenState: 3
   retry:
     instances:
       accountsClient:
@@ -76,7 +55,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
+        include: "health,info"
