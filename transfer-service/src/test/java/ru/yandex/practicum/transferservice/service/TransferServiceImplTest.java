@@ -7,8 +7,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.transferservice.client.AccountResponseDto;
 import ru.yandex.practicum.transferservice.client.AccountsClient;
-import ru.yandex.practicum.transferservice.client.NotificationsClient;
 import ru.yandex.practicum.transferservice.dto.*;
+import ru.yandex.practicum.transferservice.kafka.KafkaNotificationProducer;
 import ru.yandex.practicum.transferservice.repository.TransferOperationRepository;
 
 import java.math.BigDecimal;
@@ -24,7 +24,7 @@ class TransferServiceImplTest {
     private AccountsClient accountsClient;
 
     @Mock
-    private NotificationsClient notificationsClient;
+    private KafkaNotificationProducer kafkaProducer;
 
     @Mock
     private TransferOperationRepository operationRepository;
@@ -50,7 +50,9 @@ class TransferServiceImplTest {
         assertNotNull(result);
         assertEquals("user1", result.getFromLogin());
         assertEquals("user2", result.getToLogin());
+        assertEquals(BigDecimal.valueOf(500), result.getAmount());
 
         verify(accountsClient, times(2)).updateBalance(anyString(), any());
+        verify(kafkaProducer, times(2)).send(anyString(), anyString());
     }
 }

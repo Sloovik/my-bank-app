@@ -5,12 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.transferservice.client.AccountsClient;
-import ru.yandex.practicum.transferservice.client.NotificationDto;
-import ru.yandex.practicum.transferservice.client.NotificationsClient;
 import ru.yandex.practicum.transferservice.dto.BalanceUpdateDto;
 import ru.yandex.practicum.transferservice.dto.TransferRequestDto;
 import ru.yandex.practicum.transferservice.dto.TransferResponseDto;
 import ru.yandex.practicum.transferservice.exception.TransferException;
+import ru.yandex.practicum.transferservice.kafka.KafkaNotificationProducer;
 import ru.yandex.practicum.transferservice.model.TransferOperation;
 import ru.yandex.practicum.transferservice.model.TransferStatus;
 import ru.yandex.practicum.transferservice.repository.TransferOperationRepository;
@@ -21,7 +20,7 @@ import ru.yandex.practicum.transferservice.repository.TransferOperationRepositor
 public class TransferServiceImpl implements TransferService {
 
     private final AccountsClient accountsClient;
-    private final NotificationsClient notificationsClient;
+    private final KafkaNotificationProducer kafkaProducer;
     private final TransferOperationRepository operationRepository;
 
     @Override
@@ -73,16 +72,16 @@ public class TransferServiceImpl implements TransferService {
         }
 
         try {
-            notificationsClient.sendNotification(new NotificationDto(
+            kafkaProducer.send(
                     request.getFromLogin(),
                     "Перевод %s руб. пользователю %s выполнен успешно".formatted(
                             request.getAmount(), request.getToLogin())
-            ));
-            notificationsClient.sendNotification(new NotificationDto(
+            );
+            kafkaProducer.send(
                     request.getToLogin(),
                     "Получен перевод %s руб. от пользователя %s".formatted(
                             request.getAmount(), request.getFromLogin())
-            ));
+            );
         } catch (Exception ex) {
             log.warn("Notification failed for transfer {}: {}", operation.getId(), ex.getMessage());
         }

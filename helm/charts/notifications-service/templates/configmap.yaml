@@ -8,3 +8,4 @@ metadata:
 data:
   SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/bankdb?currentSchema=notifications"
   OAUTH2_ISSUER_URI: "http://auth-server:9000"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"

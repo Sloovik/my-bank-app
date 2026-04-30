@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.cashservice.client.AccountResponseDto;
 import ru.yandex.practicum.cashservice.client.AccountsClient;
-import ru.yandex.practicum.cashservice.client.NotificationDto;
-import ru.yandex.practicum.cashservice.client.NotificationsClient;
 import ru.yandex.practicum.cashservice.dto.BalanceUpdateDto;
 import ru.yandex.practicum.cashservice.dto.CashAction;
 import ru.yandex.practicum.cashservice.dto.CashRequestDto;
 import ru.yandex.practicum.cashservice.dto.CashResponseDto;
+import ru.yandex.practicum.cashservice.kafka.KafkaNotificationProducer;
 
 import java.math.BigDecimal;
 
@@ -18,7 +17,7 @@ import java.math.BigDecimal;
 public class CashServiceImpl implements CashService {
 
     private final AccountsClient accountsClient;
-    private final NotificationsClient notificationsClient;
+    private final KafkaNotificationProducer kafkaProducer;
 
     @Override
     public CashResponseDto processCash(String login, CashRequestDto request) {
@@ -32,7 +31,7 @@ public class CashServiceImpl implements CashService {
                 ? String.format("Cash withdrawal of %s completed. New balance: %s", request.getAmount(), updatedAccount.getBalance())
                 : String.format("Cash deposit of %s completed. New balance: %s", request.getAmount(), updatedAccount.getBalance());
 
-        notificationsClient.sendNotification(new NotificationDto(login, message));
+        kafkaProducer.send(login, message);
 
         return new CashResponseDto(login, updatedAccount.getBalance(), message);
     }

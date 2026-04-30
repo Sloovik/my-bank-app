@@ -6,13 +6,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.yandex.practicum.accountsservice.dto.AccountResponseDto;
-import ru.yandex.practicum.accountsservice.dto.AccountShortDto;
-import ru.yandex.practicum.accountsservice.dto.AccountUpdateDto;
+import ru.yandex.practicum.accountsservice.dto.*;
+import ru.yandex.practicum.accountsservice.exception.AccountNotFoundException;
 import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
+import ru.yandex.practicum.accountsservice.kafka.KafkaNotificationProducer;
 import ru.yandex.practicum.accountsservice.model.Account;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
-import ru.yandex.practicum.accountsservice.repository.OutboxEventRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,8 +19,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AccountServiceImplTest {
@@ -30,7 +29,7 @@ class AccountServiceImplTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private OutboxEventRepository outboxRepository;
+    private KafkaNotificationProducer kafkaProducer;
 
     @InjectMocks
     private AccountServiceImpl accountService;
@@ -63,7 +62,7 @@ class AccountServiceImplTest {
     void getAccount_shouldThrowWhenNotFound() {
         when(accountRepository.findByLogin("unknown")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> accountService.getAccount("unknown"));
+        assertThrows(AccountNotFoundException.class, () -> accountService.getAccount("unknown"));
     }
 
     @Test
@@ -71,18 +70,18 @@ class AccountServiceImplTest {
         when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
         when(accountRepository.save(any())).thenReturn(testAccount);
 
-        BigDecimal delta = BigDecimal.valueOf(500);
-        AccountResponseDto result = accountService.updateBalance("user1", delta);
+        accountService.updateBalance("user1", BigDecimal.valueOf(500));
 
         assertEquals(BigDecimal.valueOf(1500), testAccount.getBalance());
+        verify(kafkaProducer).send(eq("user1"), anyString());
     }
 
     @Test
     void updateBalance_shouldThrowWhenInsufficientFunds() {
         when(accountRepository.findByLogin("user1")).thenReturn(Optional.of(testAccount));
 
-        BigDecimal delta = BigDecimal.valueOf(-2000);
-        assertThrows(InsufficientFundsException.class, () -> accountService.updateBalance("user1", delta));
+        assertThrows(InsufficientFundsException.class,
+                () -> accountService.updateBalance("user1", BigDecimal.valueOf(-2000)));
     }
 
     @Test
@@ -91,10 +90,11 @@ class AccountServiceImplTest {
         when(accountRepository.save(any())).thenReturn(testAccount);
 
         AccountUpdateDto updateDto = new AccountUpdateDto("Петров Петр", LocalDate.of(1985, 5, 15));
-        AccountResponseDto result = accountService.updateAccount("user1", updateDto);
+        accountService.updateAccount("user1", updateDto);
 
         assertEquals("Петров Петр", testAccount.getName());
         assertEquals(LocalDate.of(1985, 5, 15), testAccount.getBirthdate());
+        verify(kafkaProducer).send(eq("user1"), anyString());
     }
 
     @Test

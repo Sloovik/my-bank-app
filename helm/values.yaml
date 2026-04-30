@@ -17,6 +17,9 @@ global:
 postgres:
   enabled: true
 
+kafka:
+  enabled: true
+
 auth-server:
   enabled: true
 

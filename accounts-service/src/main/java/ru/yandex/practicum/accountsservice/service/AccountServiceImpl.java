@@ -7,10 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.accountsservice.dto.*;
 import ru.yandex.practicum.accountsservice.exception.AccountNotFoundException;
 import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
+import ru.yandex.practicum.accountsservice.kafka.KafkaNotificationProducer;
 import ru.yandex.practicum.accountsservice.model.Account;
-import ru.yandex.practicum.accountsservice.model.OutboxEvent;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
-import ru.yandex.practicum.accountsservice.repository.OutboxEventRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
-    private final OutboxEventRepository outboxRepository;
+    private final KafkaNotificationProducer kafkaProducer;
 
     @Override
     @Transactional(readOnly = true)
@@ -43,11 +42,7 @@ public class AccountServiceImpl implements AccountService {
         account.setBirthdate(dto.birthdate());
         account = accountRepository.save(account);
 
-        String message = "Account profile updated: name=" + dto.name();
-        outboxRepository.save(new OutboxEvent(
-                "ACCOUNT_UPDATED",
-                "{\"login\":\"%s\",\"message\":\"%s\"}".formatted(login, message)
-        ));
+        kafkaProducer.send(login, "Данные аккаунта обновлены");
 
         return toResponseDto(account);
     }
@@ -74,11 +69,10 @@ public class AccountServiceImpl implements AccountService {
         account.setBalance(newBalance);
         account = accountRepository.save(account);
 
-        String message = "Balance updated: delta=" + delta + ", new balance=" + newBalance;
-        outboxRepository.save(new OutboxEvent(
-                "BALANCE_UPDATED",
-                "{\"login\":\"%s\",\"message\":\"%s\"}".formatted(login, message)
-        ));
+        String msg = delta.compareTo(BigDecimal.ZERO) > 0
+                ? "Баланс пополнен на " + delta + " руб. Текущий баланс: " + newBalance + " руб."
+                : "Списано " + delta.abs() + " руб. Текущий баланс: " + newBalance + " руб.";
+        kafkaProducer.send(login, msg);
 
         return toResponseDto(account);
     }
