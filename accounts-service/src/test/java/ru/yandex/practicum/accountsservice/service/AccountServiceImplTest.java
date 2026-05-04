@@ -6,10 +6,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import ru.yandex.practicum.accountsservice.dto.*;
 import ru.yandex.practicum.accountsservice.exception.AccountNotFoundException;
 import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
-import ru.yandex.practicum.accountsservice.kafka.KafkaNotificationProducer;
 import ru.yandex.practicum.accountsservice.model.Account;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
 
@@ -29,7 +29,7 @@ class AccountServiceImplTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private KafkaNotificationProducer kafkaProducer;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private AccountServiceImpl accountService;
@@ -73,7 +73,7 @@ class AccountServiceImplTest {
         accountService.updateBalance("user1", BigDecimal.valueOf(500));
 
         assertEquals(BigDecimal.valueOf(1500), testAccount.getBalance());
-        verify(kafkaProducer).send(eq("user1"), anyString());
+        verify(eventPublisher, times(1)).publishEvent(any(Object.class));
     }
 
     @Test
@@ -94,7 +94,7 @@ class AccountServiceImplTest {
 
         assertEquals("Петров Петр", testAccount.getName());
         assertEquals(LocalDate.of(1985, 5, 15), testAccount.getBirthdate());
-        verify(kafkaProducer).send(eq("user1"), anyString());
+        verify(eventPublisher, times(1)).publishEvent(any(Object.class));
     }
 
     @Test

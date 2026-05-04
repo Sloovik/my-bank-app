@@ -2,12 +2,13 @@ package ru.yandex.practicum.accountsservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.accountsservice.dto.*;
+import ru.yandex.practicum.accountsservice.event.NotificationEvent;
 import ru.yandex.practicum.accountsservice.exception.AccountNotFoundException;
 import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
-import ru.yandex.practicum.accountsservice.kafka.KafkaNotificationProducer;
 import ru.yandex.practicum.accountsservice.model.Account;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
 
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
-    private final KafkaNotificationProducer kafkaProducer;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -42,7 +43,7 @@ public class AccountServiceImpl implements AccountService {
         account.setBirthdate(dto.birthdate());
         account = accountRepository.save(account);
 
-        kafkaProducer.send(login, "Данные аккаунта обновлены");
+        eventPublisher.publishEvent(new NotificationEvent(login, "Данные аккаунта обновлены"));
 
         return toResponseDto(account);
     }
@@ -72,7 +73,8 @@ public class AccountServiceImpl implements AccountService {
         String msg = delta.compareTo(BigDecimal.ZERO) > 0
                 ? "Баланс пополнен на " + delta + " руб. Текущий баланс: " + newBalance + " руб."
                 : "Списано " + delta.abs() + " руб. Текущий баланс: " + newBalance + " руб.";
-        kafkaProducer.send(login, msg);
+
+        eventPublisher.publishEvent(new NotificationEvent(login, msg));
 
         return toResponseDto(account);
     }

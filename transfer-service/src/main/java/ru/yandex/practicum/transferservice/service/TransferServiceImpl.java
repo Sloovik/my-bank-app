@@ -2,14 +2,15 @@ package ru.yandex.practicum.transferservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.transferservice.client.AccountsClient;
 import ru.yandex.practicum.transferservice.dto.BalanceUpdateDto;
 import ru.yandex.practicum.transferservice.dto.TransferRequestDto;
 import ru.yandex.practicum.transferservice.dto.TransferResponseDto;
+import ru.yandex.practicum.transferservice.event.NotificationEvent;
 import ru.yandex.practicum.transferservice.exception.TransferException;
-import ru.yandex.practicum.transferservice.kafka.KafkaNotificationProducer;
 import ru.yandex.practicum.transferservice.model.TransferOperation;
 import ru.yandex.practicum.transferservice.model.TransferStatus;
 import ru.yandex.practicum.transferservice.repository.TransferOperationRepository;
@@ -20,7 +21,7 @@ import ru.yandex.practicum.transferservice.repository.TransferOperationRepositor
 public class TransferServiceImpl implements TransferService {
 
     private final AccountsClient accountsClient;
-    private final KafkaNotificationProducer kafkaProducer;
+    private final ApplicationEventPublisher eventPublisher;
     private final TransferOperationRepository operationRepository;
 
     @Override
@@ -71,23 +72,19 @@ public class TransferServiceImpl implements TransferService {
             throw new TransferException("Перевод не выполнен, средства возвращены", ex);
         }
 
-        try {
-            kafkaProducer.send(
-                    request.getFromLogin(),
-                    "Перевод %s руб. пользователю %s выполнен успешно".formatted(
-                            request.getAmount(), request.getToLogin())
-            );
-            kafkaProducer.send(
-                    request.getToLogin(),
-                    "Получен перевод %s руб. от пользователя %s".formatted(
-                            request.getAmount(), request.getFromLogin())
-            );
-        } catch (Exception ex) {
-            log.warn("Notification failed for transfer {}: {}", operation.getId(), ex.getMessage());
-        }
-
         operation.setStatus(TransferStatus.COMPLETED);
         operationRepository.save(operation);
+
+        eventPublisher.publishEvent(new NotificationEvent(
+                request.getFromLogin(),
+                "Перевод %s руб. пользователю %s выполнен успешно".formatted(
+                        request.getAmount(), request.getToLogin())
+        ));
+        eventPublisher.publishEvent(new NotificationEvent(
+                request.getToLogin(),
+                "Получен перевод %s руб. от пользователя %s".formatted(
+                        request.getAmount(), request.getFromLogin())
+        ));
 
         return new TransferResponseDto(
                 request.getFromLogin(),
