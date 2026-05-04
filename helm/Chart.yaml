@@ -9,6 +9,9 @@ dependencies:
     alias: postgres
     version: "0.1.0"
     repository: "file://charts/postgresql"
+  - name: kafka
+    version: "0.1.0"
+    repository: "file://charts/kafka"
   - name: auth-server
     version: "0.1.0"
     repository: "file://charts/auth-server"

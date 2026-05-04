@@ -5,9 +5,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import ru.yandex.practicum.transferservice.client.AccountResponseDto;
 import ru.yandex.practicum.transferservice.client.AccountsClient;
-import ru.yandex.practicum.transferservice.client.NotificationsClient;
 import ru.yandex.practicum.transferservice.dto.*;
 import ru.yandex.practicum.transferservice.repository.TransferOperationRepository;
 
@@ -24,7 +24,7 @@ class TransferServiceImplTest {
     private AccountsClient accountsClient;
 
     @Mock
-    private NotificationsClient notificationsClient;
+    private ApplicationEventPublisher eventPublisher;
 
     @Mock
     private TransferOperationRepository operationRepository;
@@ -50,7 +50,9 @@ class TransferServiceImplTest {
         assertNotNull(result);
         assertEquals("user1", result.getFromLogin());
         assertEquals("user2", result.getToLogin());
+        assertEquals(BigDecimal.valueOf(500), result.getAmount());
 
         verify(accountsClient, times(2)).updateBalance(anyString(), any());
+        verify(eventPublisher, times(2)).publishEvent(any(Object.class));
     }
 }

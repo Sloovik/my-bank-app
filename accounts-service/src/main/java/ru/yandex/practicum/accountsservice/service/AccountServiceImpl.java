@@ -2,15 +2,15 @@ package ru.yandex.practicum.accountsservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.accountsservice.dto.*;
+import ru.yandex.practicum.accountsservice.event.NotificationEvent;
 import ru.yandex.practicum.accountsservice.exception.AccountNotFoundException;
 import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
 import ru.yandex.practicum.accountsservice.model.Account;
-import ru.yandex.practicum.accountsservice.model.OutboxEvent;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
-import ru.yandex.practicum.accountsservice.repository.OutboxEventRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
-    private final OutboxEventRepository outboxRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -43,11 +43,7 @@ public class AccountServiceImpl implements AccountService {
         account.setBirthdate(dto.birthdate());
         account = accountRepository.save(account);
 
-        String message = "Account profile updated: name=" + dto.name();
-        outboxRepository.save(new OutboxEvent(
-                "ACCOUNT_UPDATED",
-                "{\"login\":\"%s\",\"message\":\"%s\"}".formatted(login, message)
-        ));
+        eventPublisher.publishEvent(new NotificationEvent(login, "Данные аккаунта обновлены"));
 
         return toResponseDto(account);
     }
@@ -74,11 +70,11 @@ public class AccountServiceImpl implements AccountService {
         account.setBalance(newBalance);
         account = accountRepository.save(account);
 
-        String message = "Balance updated: delta=" + delta + ", new balance=" + newBalance;
-        outboxRepository.save(new OutboxEvent(
-                "BALANCE_UPDATED",
-                "{\"login\":\"%s\",\"message\":\"%s\"}".formatted(login, message)
-        ));
+        String msg = delta.compareTo(BigDecimal.ZERO) > 0
+                ? "Баланс пополнен на " + delta + " руб. Текущий баланс: " + newBalance + " руб."
+                : "Списано " + delta.abs() + " руб. Текущий баланс: " + newBalance + " руб.";
+
+        eventPublisher.publishEvent(new NotificationEvent(login, msg));
 
         return toResponseDto(account);
     }
