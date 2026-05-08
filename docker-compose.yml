@@ -66,6 +66,9 @@ services:
       - OAUTH2_CLIENT_ID=accounts-service
       - OAUTH2_CLIENT_SECRET=accounts-secret
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,6 +92,9 @@ services:
       - OAUTH2_CLIENT_ID=cash-service
       - OAUTH2_CLIENT_SECRET=cash-secret
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     depends_on:
       postgres:
         condition: service_healthy
@@ -112,6 +118,9 @@ services:
       - OAUTH2_CLIENT_ID=transfer-service
       - OAUTH2_CLIENT_SECRET=transfer-secret
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     depends_on:
       postgres:
         condition: service_healthy
@@ -132,6 +141,9 @@ services:
       - SPRING_DATASOURCE_PASSWORD=bankpassword
       - OAUTH2_ISSUER_URI=http://auth-server:9000
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     depends_on:
       postgres:
         condition: service_healthy
@@ -150,6 +162,9 @@ services:
       - TRANSFER_SERVICE_URL=http://transfer-service:8083
       - NOTIFICATIONS_SERVICE_URL=http://notifications-service:8084
       - OAUTH2_ISSUER_URI=http://auth-server:9000
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     depends_on:
       auth-server:
         condition: service_started
@@ -169,12 +184,94 @@ services:
       - OAUTH2_USERINFO_URI=http://auth-server:9000/userinfo
       - OAUTH2_JWK_SET_URI=http://auth-server:9000/oauth2/jwks
       - OAUTH2_REDIRECT_URI=http://localhost:8080/login/oauth2/code/front-app
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     depends_on:
       gateway-server:
         condition: service_started
       auth-server:
         condition: service_started
 
+  zipkin:
+    image: openzipkin/zipkin:3.4.0
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -v red"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.0
+    container_name: logstash
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./logstash/pipeline.conf:/usr/share/logstash/pipeline/pipeline.conf
+      - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+    environment:
+      - LS_JAVA_OPTS=-Xmx256m -Xms256m
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.54.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/rules.yml:/etc/prometheus/rules/rules.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboard-files:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
   kafka_data:
+  elasticsearch_data:
+  grafana_data:

@@ -12,6 +12,24 @@ dependencies:
   - name: kafka
     version: "0.1.0"
     repository: "file://charts/kafka"
+  - name: zipkin
+    version: "0.1.0"
+    repository: "file://charts/zipkin"
+  - name: prometheus
+    version: "0.1.0"
+    repository: "file://charts/prometheus"
+  - name: grafana
+    version: "0.1.0"
+    repository: "file://charts/grafana"
+  - name: elasticsearch
+    version: "0.1.0"
+    repository: "file://charts/elasticsearch"
+  - name: logstash
+    version: "0.1.0"
+    repository: "file://charts/logstash"
+  - name: kibana
+    version: "0.1.0"
+    repository: "file://charts/kibana"
   - name: auth-server
     version: "0.1.0"
     repository: "file://charts/auth-server"

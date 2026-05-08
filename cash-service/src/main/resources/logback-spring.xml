@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="cash-service"/>
+    <springProperty scope="context" name="logstashHost" source="logstash.host" defaultValue="localhost"/>
+    <springProperty scope="context" name="logstashPort" source="logstash.port" defaultValue="5044"/>
+
+    <!-- Console appender — JSON format with traceId/spanId -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"${appName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <!-- Logstash TCP appender -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${logstashHost}:${logstashPort}</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"${appName}"}</customFields>
+        </encoder>
+        <keepAliveDuration>5 minutes</keepAliveDuration>
+        <reconnectionDelay>10 second</reconnectionDelay>
+    </appender>
+
+    <!-- Async wrapper for Logstash -->
+    <appender name="ASYNC_LOGSTASH" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="LOGSTASH"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_LOGSTASH"/>
+    </root>
+
+    <logger name="ru.yandex.practicum" level="DEBUG"/>
+    <logger name="org.springframework.security" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
+</configuration>

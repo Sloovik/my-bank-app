@@ -21,6 +21,8 @@ spring:
             user-info-uri: ${OAUTH2_USERINFO_URI:http://localhost:9000/userinfo}
             jwk-set-uri: ${OAUTH2_JWK_SET_URI:http://localhost:9000/oauth2/jwks}
             user-name-attribute: sub
+  zipkin:
+    base-url: ${ZIPKIN_BASE_URL:http://localhost:9411}
 
 gateway:
   url: ${GATEWAY_URL:http://localhost:8765}
@@ -29,4 +31,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health,info"
+        include: "health,info,prometheus,metrics"
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+
+logstash:
+  host: ${LOGSTASH_HOST:localhost}
+  port: ${LOGSTASH_PORT:5044}

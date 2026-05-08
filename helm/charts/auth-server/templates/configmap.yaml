@@ -7,3 +7,6 @@ metadata:
     app: {{ .Chart.Name }}
 data:
   JWT_KEY_ID: "my-bank-app-rsa-key-2024"
+  ZIPKIN_BASE_URL: "http://zipkin:9411"
+  LOGSTASH_HOST: "logstash"
+  LOGSTASH_PORT: "5044"

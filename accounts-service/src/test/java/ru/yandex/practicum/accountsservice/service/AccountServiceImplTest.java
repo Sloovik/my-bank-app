@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import ru.yandex.practicum.accountsservice.dto.*;
 import ru.yandex.practicum.accountsservice.exception.AccountNotFoundException;
 import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
+import ru.yandex.practicum.accountsservice.metrics.AccountMetrics;
 import ru.yandex.practicum.accountsservice.model.Account;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
 
@@ -30,6 +31,9 @@ class AccountServiceImplTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private AccountMetrics accountMetrics;
 
     @InjectMocks
     private AccountServiceImpl accountService;

@@ -38,6 +38,9 @@ spring:
       acks: all
       retries: 3
 
+  zipkin:
+    base-url: ${ZIPKIN_BASE_URL:http://localhost:9411}
+
 feign:
   circuitbreaker:
     enabled: true
@@ -64,4 +67,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health,info"
+        include: "health,info,prometheus,metrics"
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+
+logstash:
+  host: ${LOGSTASH_HOST:localhost}
+  port: ${LOGSTASH_PORT:5044}

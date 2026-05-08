@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: logstash
+data:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+
+  pipeline.conf: |
+    input {
+      tcp {
+        port => 5044
+        codec => json_lines
+      }
+    }
+
+    filter {
+      # Парсим JSON-логи от Logback LogstashEncoder
+      if [message] {
+        mutate {
+          add_field => { "[@metadata][target_index]" => "bank-logs-%{+YYYY.MM.dd}" }
+        }
+      }
+
+      # Маскируем чувствительные данные (пароли, суммы в логах не маскируем — они бизнес-данные)
+      mutate {
+        gsub => [
+          "message", "password=[^,&\s]+", "password=***",
+          "message", "secret=[^,&\s]+", "secret=***"
+        ]
+      }
+
+      # Добавляем временную метку если отсутствует
+      if ![timestamp] {
+        mutate {
+          add_field => { "timestamp" => "%{@timestamp}" }
+        }
+      }
+    }
+
+    output {
+      elasticsearch {
+        hosts => ["elasticsearch:9200"]
+        index => "%{[@metadata][target_index]}"
+      }
+      stdout {
+        codec => rubydebug
+      }
+    }

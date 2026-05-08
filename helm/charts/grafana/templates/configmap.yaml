@@ -1,0 +1,234 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: grafana
+data:
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: false
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-provider
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: grafana
+data:
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: default
+        orgId: 1
+        folder: Bank
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-business
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: grafana
+data:
+  business-metrics.json: |
+    {
+      "title": "Bank Business Metrics",
+      "uid": "bank-business",
+      "tags": ["bank", "business"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "panels": [
+        {
+          "id": 1,
+          "title": "Failed Withdrawals (rate 5m)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "increase(bank_withdrawal_failed_total[5m])",
+            "legendFormat": "{{ login }}"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "Failed Transfers (rate 5m)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [{
+            "expr": "increase(bank_transfer_failed_total[5m])",
+            "legendFormat": "{{ from_login }} -> {{ to_login }}"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "Failed Notifications (rate 5m)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{
+            "expr": "increase(bank_notification_failed_total[5m])",
+            "legendFormat": "{{ login }}"
+          }]
+        }
+      ],
+      "time": {"from": "now-1h", "to": "now"},
+      "refresh": "30s"
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-http
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: grafana
+data:
+  http-metrics.json: |
+    {
+      "title": "Bank HTTP Metrics",
+      "uid": "bank-http",
+      "tags": ["bank", "http"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "panels": [
+        {
+          "id": 1,
+          "title": "RPS by service",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "sum(rate(http_server_requests_seconds_count[5m])) by (application)",
+            "legendFormat": "{{ application }}"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "4xx Error Rate",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [{
+            "expr": "sum(rate(http_server_requests_seconds_count{status=~\"4..\"}[5m])) by (application)",
+            "legendFormat": "{{ application }}"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "5xx Error Rate",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{
+            "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) by (application)",
+            "legendFormat": "{{ application }}"
+          }]
+        },
+        {
+          "id": 4,
+          "title": "p99 Latency (seconds)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [{
+            "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, application))",
+            "legendFormat": "p99 {{ application }}"
+          }]
+        },
+        {
+          "id": 5,
+          "title": "p95 Latency (seconds)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "targets": [{
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, application))",
+            "legendFormat": "p95 {{ application }}"
+          }]
+        }
+      ],
+      "time": {"from": "now-1h", "to": "now"},
+      "refresh": "30s"
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-jvm
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: grafana
+data:
+  jvm-metrics.json: |
+    {
+      "title": "Bank JVM Metrics",
+      "uid": "bank-jvm",
+      "tags": ["bank", "jvm"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "panels": [
+        {
+          "id": 1,
+          "title": "JVM Heap Used (bytes)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "jvm_memory_used_bytes{area=\"heap\"}",
+            "legendFormat": "{{ application }} {{ id }}"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "JVM NonHeap Used (bytes)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [{
+            "expr": "jvm_memory_used_bytes{area=\"nonheap\"}",
+            "legendFormat": "{{ application }} {{ id }}"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "CPU Usage",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{
+            "expr": "process_cpu_usage",
+            "legendFormat": "{{ application }}"
+          }]
+        },
+        {
+          "id": 4,
+          "title": "JVM Threads",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [{
+            "expr": "jvm_threads_live_threads",
+            "legendFormat": "{{ application }}"
+          }]
+        },
+        {
+          "id": 5,
+          "title": "GC Pause Rate",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "targets": [{
+            "expr": "rate(jvm_gc_pause_seconds_sum[5m])",
+            "legendFormat": "{{ application }} {{ action }}"
+          }]
+        }
+      ],
+      "time": {"from": "now-1h", "to": "now"},
+      "refresh": "30s"
+    }
