@@ -24,8 +24,6 @@ spring:
       properties:
         spring.json.trusted.packages: "*"
         spring.json.value.default.type: ru.yandex.practicum.notificationsservice.dto.NotificationDto
-  zipkin:
-    base-url: ${ZIPKIN_BASE_URL:http://localhost:9411}
 
 management:
   endpoints:
@@ -41,7 +39,6 @@ management:
   tracing:
     sampling:
       probability: 1.0
-
-logstash:
-  host: ${LOGSTASH_HOST:localhost}
-  port: ${LOGSTASH_PORT:5044}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

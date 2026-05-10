@@ -11,6 +11,4 @@ data:
   TRANSFER_SERVICE_URL: "http://transfer-service:8083"
   NOTIFICATIONS_SERVICE_URL: "http://notifications-service:8084"
   OAUTH2_ISSUER_URI: "http://auth-server:9000"
-  ZIPKIN_BASE_URL: "http://zipkin:9411"
-  LOGSTASH_HOST: "logstash"
-  LOGSTASH_PORT: "5044"
+  ZIPKIN_ENDPOINT: "http://zipkin:9411/api/v2/spans"

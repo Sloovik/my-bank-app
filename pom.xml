@@ -83,6 +83,13 @@
             <version>7.4</version>
         </dependency>
 
+        <!-- Kafka Logback Appender (log shipping via Kafka) -->
+        <dependency>
+            <groupId>com.github.danielwegener</groupId>
+            <artifactId>logback-kafka-appender</artifactId>
+            <version>0.2.0-RC2</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

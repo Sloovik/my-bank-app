@@ -15,8 +15,6 @@ spring:
     show-sql: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
-  zipkin:
-    base-url: ${ZIPKIN_BASE_URL:http://localhost:9411}
 
   security:
     oauth2:
@@ -48,7 +46,6 @@ management:
   tracing:
     sampling:
       probability: 1.0
-
-logstash:
-  host: ${LOGSTASH_HOST:localhost}
-  port: ${LOGSTASH_PORT:5044}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

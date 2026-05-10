@@ -11,6 +11,4 @@ data:
   OAUTH2_TOKEN_URI: "http://auth-server:9000/oauth2/token"
   OAUTH2_CLIENT_ID: "transfer-service"
   KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
-  ZIPKIN_BASE_URL: "http://zipkin:9411"
-  LOGSTASH_HOST: "logstash"
-  LOGSTASH_PORT: "5044"
+  ZIPKIN_ENDPOINT: "http://zipkin:9411/api/v2/spans"

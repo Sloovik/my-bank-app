@@ -66,9 +66,7 @@ services:
       - OAUTH2_CLIENT_ID=accounts-service
       - OAUTH2_CLIENT_SECRET=accounts-secret
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - ZIPKIN_BASE_URL=http://zipkin:9411
-      - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,9 +90,7 @@ services:
       - OAUTH2_CLIENT_ID=cash-service
       - OAUTH2_CLIENT_SECRET=cash-secret
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - ZIPKIN_BASE_URL=http://zipkin:9411
-      - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
       postgres:
         condition: service_healthy
@@ -118,9 +114,7 @@ services:
       - OAUTH2_CLIENT_ID=transfer-service
       - OAUTH2_CLIENT_SECRET=transfer-secret
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - ZIPKIN_BASE_URL=http://zipkin:9411
-      - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
       postgres:
         condition: service_healthy
@@ -141,9 +135,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=bankpassword
       - OAUTH2_ISSUER_URI=http://auth-server:9000
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - ZIPKIN_BASE_URL=http://zipkin:9411
-      - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
       postgres:
         condition: service_healthy
@@ -162,9 +154,7 @@ services:
       - TRANSFER_SERVICE_URL=http://transfer-service:8083
       - NOTIFICATIONS_SERVICE_URL=http://notifications-service:8084
       - OAUTH2_ISSUER_URI=http://auth-server:9000
-      - ZIPKIN_BASE_URL=http://zipkin:9411
-      - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
       auth-server:
         condition: service_started
@@ -184,9 +174,7 @@ services:
       - OAUTH2_USERINFO_URI=http://auth-server:9000/userinfo
       - OAUTH2_JWK_SET_URI=http://auth-server:9000/oauth2/jwks
       - OAUTH2_REDIRECT_URI=http://localhost:8080/login/oauth2/code/front-app
-      - ZIPKIN_BASE_URL=http://zipkin:9411
-      - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
       gateway-server:
         condition: service_started
@@ -220,15 +208,17 @@ services:
     image: docker.elastic.co/logstash/logstash:8.15.0
     container_name: logstash
     ports:
-      - "5044:5044"
       - "9600:9600"
     volumes:
       - ./logstash/pipeline.conf:/usr/share/logstash/pipeline/pipeline.conf
       - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
     environment:
       - LS_JAVA_OPTS=-Xmx256m -Xms256m
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       elasticsearch:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   kibana:

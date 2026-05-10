@@ -12,25 +12,26 @@ data:
 
   pipeline.conf: |
     input {
-      tcp {
-        port => 5044
-        codec => json_lines
+      kafka {
+        bootstrap_servers => "kafka:9092"
+        topics => ["bank-logs"]
+        codec => json
+        group_id => "logstash-logs-consumer"
+        auto_offset_reset => "earliest"
+        consumer_threads => 1
       }
     }
 
     filter {
-      # Парсим JSON-логи от Logback LogstashEncoder
-      if [message] {
-        mutate {
-          add_field => { "[@metadata][target_index]" => "bank-logs-%{+YYYY.MM.dd}" }
-        }
+      mutate {
+        add_field => { "[@metadata][target_index]" => "bank-logs-%{+YYYY.MM.dd}" }
       }
 
-      # Маскируем чувствительные данные (пароли, суммы в логах не маскируем — они бизнес-данные)
+      # Маскируем чувствительные данные
       mutate {
         gsub => [
-          "message", "password=[^,&\s]+", "password=***",
-          "message", "secret=[^,&\s]+", "secret=***"
+          "message", "password=[^,&\\s]+", "password=***",
+          "message", "secret=[^,&\\s]+", "secret=***"
         ]
       }
 
@@ -46,8 +47,5 @@ data:
       elasticsearch {
         hosts => ["elasticsearch:9200"]
         index => "%{[@metadata][target_index]}"
-      }
-      stdout {
-        codec => rubydebug
       }
     }
