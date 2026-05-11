@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import ru.yandex.practicum.transferservice.client.AccountResponseDto;
 import ru.yandex.practicum.transferservice.client.AccountsClient;
 import ru.yandex.practicum.transferservice.dto.*;
+import ru.yandex.practicum.transferservice.metrics.TransferMetrics;
 import ru.yandex.practicum.transferservice.repository.TransferOperationRepository;
 
 import java.math.BigDecimal;
@@ -28,6 +29,9 @@ class TransferServiceImplTest {
 
     @Mock
     private TransferOperationRepository operationRepository;
+
+    @Mock
+    private TransferMetrics transferMetrics;
 
     @InjectMocks
     private TransferServiceImpl transferService;

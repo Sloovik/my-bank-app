@@ -11,6 +11,7 @@ import ru.yandex.practicum.transferservice.dto.TransferRequestDto;
 import ru.yandex.practicum.transferservice.dto.TransferResponseDto;
 import ru.yandex.practicum.transferservice.event.NotificationEvent;
 import ru.yandex.practicum.transferservice.exception.TransferException;
+import ru.yandex.practicum.transferservice.metrics.TransferMetrics;
 import ru.yandex.practicum.transferservice.model.TransferOperation;
 import ru.yandex.practicum.transferservice.model.TransferStatus;
 import ru.yandex.practicum.transferservice.repository.TransferOperationRepository;
@@ -23,6 +24,7 @@ public class TransferServiceImpl implements TransferService {
     private final AccountsClient accountsClient;
     private final ApplicationEventPublisher eventPublisher;
     private final TransferOperationRepository operationRepository;
+    private final TransferMetrics transferMetrics;
 
     @Override
     @Transactional
@@ -44,6 +46,7 @@ public class TransferServiceImpl implements TransferService {
         } catch (Exception ex) {
             operation.setStatus(TransferStatus.FAILED);
             operation.setErrorMessage("Debit failed: " + ex.getMessage());
+            transferMetrics.incrementFailedTransfer(request.getFromLogin(), request.getToLogin());
             operationRepository.save(operation);
             throw new TransferException("Не удалось списать средства: " + ex.getMessage(), ex);
         }
@@ -68,6 +71,7 @@ public class TransferServiceImpl implements TransferService {
                 operation.setStatus(TransferStatus.FAILED);
                 operation.setErrorMessage("Compensation failed: " + compensationEx.getMessage());
             }
+            transferMetrics.incrementFailedTransfer(request.getFromLogin(), request.getToLogin());
             operationRepository.save(operation);
             throw new TransferException("Перевод не выполнен, средства возвращены", ex);
         }

@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: logstash
+data:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+
+  pipeline.conf: |
+    input {
+      kafka {
+        bootstrap_servers => "kafka:9092"
+        topics => ["bank-logs"]
+        codec => json
+        group_id => "logstash-logs-consumer"
+        auto_offset_reset => "earliest"
+        consumer_threads => 1
+      }
+    }
+
+    filter {
+      mutate {
+        add_field => { "[@metadata][target_index]" => "bank-logs-%{+YYYY.MM.dd}" }
+      }
+
+      # Маскируем чувствительные данные
+      mutate {
+        gsub => [
+          "message", "password=[^,&\\s]+", "password=***",
+          "message", "secret=[^,&\\s]+", "secret=***"
+        ]
+      }
+
+      # Добавляем временную метку если отсутствует
+      if ![timestamp] {
+        mutate {
+          add_field => { "timestamp" => "%{@timestamp}" }
+        }
+      }
+    }
+
+    output {
+      elasticsearch {
+        hosts => ["elasticsearch:9200"]
+        index => "%{[@metadata][target_index]}"
+      }
+    }

@@ -14,10 +14,33 @@ global:
     username: bankuser
     password: bankpassword
 
+  observability:
+    zipkinBaseUrl: "http://zipkin:9411"
+    logstashHost: "logstash"
+    logstashPort: "5044"
+
 postgres:
   enabled: true
 
 kafka:
+  enabled: true
+
+zipkin:
+  enabled: true
+
+prometheus:
+  enabled: true
+
+grafana:
+  enabled: true
+
+elasticsearch:
+  enabled: true
+
+logstash:
+  enabled: true
+
+kibana:
   enabled: true
 
 auth-server:

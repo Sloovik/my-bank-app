@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.notificationsservice.dto.NotificationDto;
+import ru.yandex.practicum.notificationsservice.metrics.NotificationMetrics;
 import ru.yandex.practicum.notificationsservice.service.NotificationService;
 
 import static org.mockito.Mockito.times;
@@ -16,6 +17,9 @@ class NotificationKafkaConsumerTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private NotificationMetrics notificationMetrics;
 
     @InjectMocks
     private NotificationKafkaConsumer consumer;

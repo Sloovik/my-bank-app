@@ -13,3 +13,4 @@ data:
   OAUTH2_USERINFO_URI: "http://auth-server:9000/userinfo"
   OAUTH2_JWK_SET_URI: "http://auth-server:9000/oauth2/jwks"
   OAUTH2_REDIRECT_URI: "http://localhost:30080/login/oauth2/code/front-app"
+  ZIPKIN_ENDPOINT: "http://zipkin:9411/api/v2/spans"

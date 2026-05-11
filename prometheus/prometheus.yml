@@ -1,0 +1,42 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/rules.yml
+
+scrape_configs:
+  - job_name: 'accounts-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['accounts-service:8081']
+
+  - job_name: 'cash-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['cash-service:8082']
+
+  - job_name: 'transfer-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['transfer-service:8083']
+
+  - job_name: 'notifications-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['notifications-service:8084']
+
+  - job_name: 'gateway-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway-server:8765']
+
+  - job_name: 'front-app'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['front-app:8080']
+
+  - job_name: 'auth-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['auth-server:9000']

@@ -9,6 +9,7 @@ import ru.yandex.practicum.accountsservice.dto.*;
 import ru.yandex.practicum.accountsservice.event.NotificationEvent;
 import ru.yandex.practicum.accountsservice.exception.AccountNotFoundException;
 import ru.yandex.practicum.accountsservice.exception.InsufficientFundsException;
+import ru.yandex.practicum.accountsservice.metrics.AccountMetrics;
 import ru.yandex.practicum.accountsservice.model.Account;
 import ru.yandex.practicum.accountsservice.repository.AccountRepository;
 
@@ -25,6 +26,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AccountMetrics accountMetrics;
 
     @Override
     @Transactional(readOnly = true)
@@ -64,6 +66,8 @@ public class AccountServiceImpl implements AccountService {
         BigDecimal newBalance = account.getBalance().add(delta);
 
         if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+            log.warn("Insufficient funds for login={}: requested={}, balance={}", login, delta.abs(), account.getBalance());
+            accountMetrics.incrementFailedWithdrawal(login);
             throw new InsufficientFundsException(login, delta.abs(), account.getBalance());
         }
 
